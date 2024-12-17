@@ -6,3 +6,4 @@ pytest
 plotly
 streamlit-folium
 folium
+mock

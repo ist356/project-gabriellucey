@@ -4,7 +4,7 @@ import requests
 from playwright.sync_api import sync_playwright
 from fractions import Fraction
 
-#Create variables to use for functions
+#create variables to use for functions
 NFL_TEAMS_URL = "https://www.nfl.com/teams/"
 STATS_KEYS = [
     "TOTAL FIRST DOWNS", "THIRD DOWN CONVERSIONS", "FOURTH DOWN CONVERSIONS",
@@ -19,7 +19,9 @@ HEADERS = {
 }
 
 def scrape_nfl_teams():
-    """Scrapes all NFL team names."""
+    '''
+    Go to nfl teams url and scrape team names 
+    '''
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
@@ -31,15 +33,20 @@ def scrape_nfl_teams():
         browser.close()
         return teams
 
-# --- Function 2: Scrape Team Stats ---
+
 def scrape_team_stats(team, page):
-    """Scrapes stats for a given team."""
+    '''
+    Loop through the list of teams buy formattign teams names and scrape stats from stat keys list.
+    Create lsit of unwanted indices and filter out unwanted stats
+    Use Fraction Function to convert stats to decimal if needed then rename those columns to include (%)
+    '''
     url = f"https://www.nfl.com/teams/{team.lower().replace(' ', '-')}/stats"
     page.goto(url)
     stats_list = page.query_selector("ul.nfl-o-team-h2h-stats__list")
     list_items = stats_list.query_selector_all("li") if stats_list else []
 
-    unwanted_indices = {1, 5, 7, 9, 13}  # Skip specific indices
+    #filter out unwanted indices
+    unwanted_indices = {1, 5, 7, 9, 13}  #indices of unwanted stats
     filtered_items = [item for i, item in enumerate(list_items) if i not in unwanted_indices]
 
     team_stats = {}
@@ -59,25 +66,26 @@ def scrape_team_stats(team, page):
     team_stats["team"] = team
     return team_stats
 
-# --- Function 3: Fetch Stadium Coordinates ---
+
 def get_stadium_coordinates(query):
     """
     Fetch latitude and longitude for a given query using the API.
     Falls back to using just the team name if the 'stadium' query fails.
+    If no fallback is available, raises a ValueError.
     """
     params = {"query": query}
     response = requests.get(API_URL, headers=HEADERS, params=params)
-    response.raise_for_status()  # Raise an exception for HTTP errors
+    response.raise_for_status()
     
     data = response.json()
     
-    # Check if results are available
+    #check if results are available
     if "results" in data and len(data["results"]) > 0:
         location = data["results"][0]["geometry"]["location"]
         return location["lat"], location["lng"]
     else:
-        # If no results for query with "Stadium", retry with team name only
-        fallback_query = " ".join(query.split()[:-1])  # Remove 'Stadium'
+        #create fallbaack query for failed searches with google api
+        fallback_query = " ".join(query.split()[:-1])
         print(f"Retrying with fallback query: {fallback_query}")
         
         params["query"] = fallback_query
@@ -91,12 +99,16 @@ def get_stadium_coordinates(query):
         else:
             raise ValueError(f"No location found for query: {query} or fallback: {fallback_query}")
 
-# --- Function 4: Scrape All Teams and Stadiums ---
+#main function to scrape all teams and stadiums
 def scrape_all_teams_and_stadiums():
-    """Main function to scrape stats and stadium coordinates for all teams."""
+    '''
+    main function to scrape all teams and stadiums
+    use playwright to scrape team stats and google api to get stadium coordinates
+    use enumerate to loop through teams and format team names
+    '''
     teams = scrape_nfl_teams()
     formatted_teams = [team.lower().replace(" ", "-") for team in teams]
-    stadium_names = [team + " Football Stadium" for team in teams]
+    stadium_names = [team + " Stadium" for team in teams]
 
     all_team_data = []
 
@@ -117,7 +129,7 @@ def scrape_all_teams_and_stadiums():
 
         browser.close()
 
-    # Save to cache folder
+    #save to cache folder
     os.makedirs("cache", exist_ok=True)
     output_path = os.path.join("cache", "nfl_team_stats.csv")
     df = pd.DataFrame(all_team_data)
@@ -129,6 +141,6 @@ def scrape_all_teams_and_stadiums():
 
     df.to_csv(output_path, index=False)
 
-# --- Script Entry Point ---
+#main script to run all functions
 if __name__ == "__main__":
     scrape_all_teams_and_stadiums()
