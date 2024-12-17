@@ -20,15 +20,21 @@ def test_nfl_team_stats_csv_structure():
     print(f"Checking structure of {FILE}")
     df = pd.read_csv(FILE)
     
-    # Expected number of rows and columns
+    # Expected columns (account for % in column names)
     expected_columns = [
-        "TOTAL FIRST DOWNS", "THIRD DOWN CONVERSIONS", "FOURTH DOWN CONVERSIONS",
+        "TOTAL FIRST DOWNS", "THIRD DOWN CONVERSIONS (%)", "FOURTH DOWN CONVERSIONS (%)",
         "TOTAL OFFENSIVE YARDS", "TOTAL RUSHING YARDS", "TOTAL PASSING YARDS",
-        "SACKS", "FIELD GOALS", "TOUCHDOWNS", "TURNOVER RATIO", "team", "latitude", "longitude"
+        "SACKS", "FIELD GOALS (%)", "TOUCHDOWNS", "TURNOVER RATIO", "team", "latitude", "longitude"
     ]
     expected_num_columns = len(expected_columns)
-    min_expected_rows = 32 
-    
+    min_expected_rows = 32
+
+    # Clean up columns with percentages
+    percentage_columns = ["THIRD DOWN CONVERSIONS (%)", "FOURTH DOWN CONVERSIONS (%)", "FIELD GOALS (%)"]
+    for col in percentage_columns:
+        if col in df.columns:
+            df[col] = df[col].astype(str).str.rstrip('%').astype(float)  # Remove '%' and convert to float
+
     # Check the columns
     assert list(df.columns) == expected_columns, "CSV columns do not match expected structure."
 

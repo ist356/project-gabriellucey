@@ -1,0 +1,8 @@
+streamlit
+pandas
+requests
+playwright
+pytest
+plotly
+streamlit-folium
+folium

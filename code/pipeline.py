@@ -96,7 +96,7 @@ def scrape_all_teams_and_stadiums():
     """Main function to scrape stats and stadium coordinates for all teams."""
     teams = scrape_nfl_teams()
     formatted_teams = [team.lower().replace(" ", "-") for team in teams]
-    stadium_names = [team + " Stadium" for team in teams]
+    stadium_names = [team + " Football Stadium" for team in teams]
 
     all_team_data = []
 
@@ -121,6 +121,12 @@ def scrape_all_teams_and_stadiums():
     os.makedirs("cache", exist_ok=True)
     output_path = os.path.join("cache", "nfl_team_stats.csv")
     df = pd.DataFrame(all_team_data)
+
+    #manually add Detroit Lions coordinates due to issues with google api search
+    detroit_index = df[df['team'] == "Detroit Lions"].index
+    df.at[detroit_index[0], "latitude"] = 42.3407
+    df.at[detroit_index[0], "longitude"] = -83.0456
+
     df.to_csv(output_path, index=False)
 
 # --- Script Entry Point ---
